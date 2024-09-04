@@ -35,6 +35,7 @@
       flex-grow: 1;
       margin: 0;
       -webkit-appearance: none;
+      appearance: none;
       width: 100%;
       height: 25px;
       background: #d3d3d3;
@@ -150,23 +151,97 @@
     h1 {
       margin-bottom: 40px;
     }
+    .calibration-button {
+      background-color: #FFA500;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    .calibration-modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .calibration-content {
+      background-color: #fefefe;
+      margin: 15% auto;
+      padding: 30px;
+      border: 1px solid #888;
+      width: 90%;
+      max-width: 600px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .calibration-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .calibration-ear-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+    }
+    .calibration-ear-buttons .ear-button {
+      width: 48%;
+    }
+    #playCalibrationTone {
+      width: 100%;
+    }
+    #finishCalibration {
+      width: 100%;
+      margin-top: 20px;
+    }
+    .calibration-content h2 {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .calibration-content p {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .close {
+      color: #aaa;
+      float: left;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>בדיקת שמיעה ידנית משופרת</h1>
     
+    <button id="calibrationButton" class="calibration-button">כיול המערכת</button>
+
     <div class="slider-container">
-      <button class="slider-button" id="freq-minus">-</button>
-      <input type="range" id="frequency" class="slider" min="0" max="10" value="0" step="1">
       <button class="slider-button" id="freq-plus">+</button>
+      <input type="range" id="frequency" class="slider" min="0" max="10" value="0" step="1">
+      <button class="slider-button" id="freq-minus">-</button>
       <span class="slider-value" id="freq-display">125 Hz</span>
     </div>
 
     <div class="slider-container">
-      <button class="slider-button" id="vol-minus">-</button>
-      <input type="range" id="volume" class="slider" min="0" max="16" value="4" step="1">
       <button class="slider-button" id="vol-plus">+</button>
+      <input type="range" id="volume" class="slider" min="0" max="16" value="4" step="1">
+      <button class="slider-button" id="vol-minus">-</button>
       <span class="slider-value" id="vol-display">10 dB</span>
     </div>
 
@@ -201,6 +276,34 @@
     </table>
   </div>
 
+  <div id="calibrationModal" class="calibration-modal">
+    <div class="calibration-content">
+      <span class="close">&times;</span>
+      <h2>כיול המערכת</h2>
+      <p>כוון את התדר והעוצמה עד שתשמע את הצליל בקושי. השתמש בכפתורי + ו- כדי לכוון בדיוק.</p>
+      <div class="slider-container">
+        <button class="slider-button" id="cal-freq-plus">+</button>
+        <input type="range" id="calibrationFrequency" class="slider" min="0" max="10" value="5" step="1">
+        <button class="slider-button" id="cal-freq-minus">-</button>
+        <span class="slider-value" id="cal-freq-display">1000 Hz</span>
+      </div>
+      <div class="slider-container">
+        <button class="slider-button" id="cal-vol-plus">+</button>
+        <input type="range" id="calibrationVolume" class="slider" min="0" max="16" value="8" step="1">
+        <button class="slider-button" id="cal-vol-minus">-</button>
+        <span class="slider-value" id="cal-vol-display">25 dB</span>
+      </div>
+      <div class="calibration-buttons">
+        <button id="playCalibrationTone" class="ear-button play-tone">השמע צליל כיול</button>
+        <div class="calibration-ear-buttons">
+          <button id="playCalibrationToneRight" class="ear-button play-tone">צליל אוזן ימין</button>
+          <button id="playCalibrationToneLeft" class="ear-button play-tone">צליל אוזן שמאל</button>
+        </div>
+        <button id="finishCalibration" class="ear-button record-result">סיים כיול</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const frequencies = [125, 250, 500, 750, 1000, 1500, 2000, 3000, 4000, 6000, 8000];
@@ -209,6 +312,8 @@
       right: {},
       left: {}
     };
+
+    let calibrationOffset = 0;
 
     function initTable() {
       const table = document.querySelector('.results-table');
@@ -225,6 +330,33 @@
       });
     }
 
+    function playCalibrationTone(ear = null) {
+      const frequency = frequencies[document.getElementById('calibrationFrequency').value];
+      const volume = volumes[document.getElementById('calibrationVolume').value];
+
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      const stereoPanner = audioContext.createStereoPanner();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+      
+      if (ear === 'left') {
+        stereoPanner.pan.value = -1;
+      } else if (ear === 'right') {
+        stereoPanner.pan.value = 1;
+      } else {
+        stereoPanner.pan.value = 0;
+      }
+
+      const amplitude = Math.pow(10, (volume - 100) / 20);
+      gainNode.gain.setValueAtTime(amplitude, audioContext.currentTime);
+
+      oscillator.connect(stereoPanner).connect(gainNode).connect(audioContext.destination);
+      oscillator.start();
+      setTimeout(() => oscillator.stop(), 2000);
+    }
+
     function playTone(ear) {
       const frequency = frequencies[document.getElementById('frequency').value];
       const volume = volumes[document.getElementById('volume').value];
@@ -237,7 +369,7 @@
       oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
       stereoPanner.pan.value = ear === 'left' ? -1 : 1;
       
-      const amplitude = Math.pow(10, (volume - 100) / 20);
+      const amplitude = Math.pow(10, (volume - 100 + calibrationOffset) / 20);
       gainNode.gain.setValueAtTime(amplitude, audioContext.currentTime);
 
       oscillator.connect(stereoPanner).connect(gainNode).connect(audioContext.destination);
@@ -304,6 +436,30 @@
       updateVolumeDisplay.call(slider);
     }
 
+    function updateCalibrationVolumeDisplay() {
+      const display = document.getElementById('cal-vol-display');
+      display.textContent = `${volumes[this.value]} dB`;
+      updateSliderValuePosition(this, display);
+    }
+
+    function changeCalibrationVolume(change) {
+      const slider = document.getElementById('calibrationVolume');
+      slider.value = Math.max(0, Math.min(16, parseInt(slider.value) + change));
+      updateCalibrationVolumeDisplay.call(slider);
+    }
+
+    function updateCalibrationFrequencyDisplay() {
+      const display = document.getElementById('cal-freq-display');
+      display.textContent = `${frequencies[this.value]} Hz`;
+      updateSliderValuePosition(this, display);
+    }
+
+    function changeCalibrationFrequency(change) {
+      const slider = document.getElementById('calibrationFrequency');
+      slider.value = Math.max(0, Math.min(10, parseInt(slider.value) + change));
+      updateCalibrationFrequencyDisplay.call(slider);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       initTable();
       document.getElementById('play-right').addEventListener('click', () => playTone('right'));
@@ -329,7 +485,72 @@
         updateFrequencyDisplay.call(freqSlider);
         updateVolumeDisplay.call(volSlider);
       });
+
+      const calibrationButton = document.getElementById('calibrationButton');
+      const calibrationModal = document.getElementById('calibrationModal');
+      const closeButton = calibrationModal.querySelector('.close');
+      const playCalibrationToneButton = document.getElementById('playCalibrationTone');
+      const playCalibrationToneRightButton = document.getElementById('playCalibrationToneRight');
+      const playCalibrationToneLeftButton = document.getElementById('playCalibrationToneLeft');
+      const finishCalibrationButton = document.getElementById('finishCalibration');
+
+      const calVolSlider = document.getElementById('calibrationVolume');
+      calVolSlider.addEventListener('input', updateCalibrationVolumeDisplay);
+      updateCalibrationVolumeDisplay.call(calVolSlider);
+
+      const calFreqSlider = document.getElementById('calibrationFrequency');
+      calFreqSlider.addEventListener('input', updateCalibrationFrequencyDisplay);
+      updateCalibrationFrequencyDisplay.call(calFreqSlider);
+
+      document.getElementById('cal-vol-minus').addEventListener('click', () => changeCalibrationVolume(-1));
+      document.getElementById('cal-vol-plus').addEventListener('click', () => changeCalibrationVolume(1));
+      document.getElementById('cal-freq-minus').addEventListener('click', () => changeCalibrationFrequency(-1));
+      document.getElementById('cal-freq-plus').addEventListener('click', () => changeCalibrationFrequency(1));
+
+      calibrationButton.addEventListener('click', () => {
+        calibrationModal.style.display = 'block';
+        // Add these lines to update the position of the labels when the modal opens
+        updateCalibrationFrequencyDisplay.call(calFreqSlider);
+        updateCalibrationVolumeDisplay.call(calVolSlider);
+      });
+
+      closeButton.addEventListener('click', () => {
+        calibrationModal.style.display = 'none';
+      });
+
+      window.addEventListener('click', (event) => {
+        if (event.target === calibrationModal) {
+          calibrationModal.style.display = 'none';
+        }
+      });
+
+      playCalibrationToneButton.addEventListener('click', () => playCalibrationTone());
+      playCalibrationToneRightButton.addEventListener('click', () => playCalibrationTone('right'));
+      playCalibrationToneLeftButton.addEventListener('click', () => playCalibrationTone('left'));
+
+      finishCalibrationButton.addEventListener('click', () => {
+        const calibrationFrequency = frequencies[document.getElementById('calibrationFrequency').value];
+        const calibrationVolume = volumes[document.getElementById('calibrationVolume').value];
+        calibrationOffset = 25 - calibrationVolume; // 25 dB is our target reference level
+        calibrationModal.style.display = 'none';
+        alert(`הכיול הושלם בהצלחה! תדר: ${calibrationFrequency} Hz, ערך הכיול: ${calibrationOffset} dB`);
+      });
     });
+
+    // Add this function to update all slider value positions
+    function updateAllSliderValuePositions() {
+      const sliders = document.querySelectorAll('.slider');
+      sliders.forEach(slider => {
+        const display = slider.parentElement.querySelector('.slider-value');
+        updateSliderValuePosition(slider, display);
+      });
+    }
+
+    // Call this function when the window is resized
+    window.addEventListener('resize', updateAllSliderValuePositions);
+
+    // Also call it once when the page loads
+    document.addEventListener('DOMContentLoaded', updateAllSliderValuePositions);
   </script>
 </body>
 </html>
