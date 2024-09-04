@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>בדיקת שמיעה ידנית משופרת</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      color: #333;
+    }
+    .slider-container {
+      width: 70%;
+      margin: 20px auto;
+      display: flex;
+      flex-direction: row-reverse;
+      align-items: center;
+      position: relative;
+      padding-top: 30px;
+    }
+    .slider {
+      flex-grow: 1;
+      margin: 0;
+      -webkit-appearance: none;
+      width: 100%;
+      height: 25px;
+      background: #d3d3d3;
+      outline: none;
+      opacity: 0.7;
+      transition: opacity .2s;
+      direction: rtl;
+    }
+    .slider:hover {
+      opacity: 1;
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 25px;
+      height: 25px;
+      background: #4CAF50;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+    .slider::-moz-range-thumb {
+      width: 25px;
+      height: 25px;
+      background: #4CAF50;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+    .slider-value {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-color: #4CAF50;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 14px;
+      transform: translateX(-50%);
+      transition: left 0.1s ease-out;
+    }
+    .slider-button {
+      font-size: 24px;
+      width: 40px;
+      height: 40px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .ear-controls {
+      display: flex;
+      flex-direction: row-reverse;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    .ear-control {
+      width: 48%;
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    .ear-button {
+      width: 100%;
+      padding: 15px;
+      margin: 10px 0;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .ear-button:hover {
+      opacity: 0.9;
+    }
+    .play-tone {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .record-result {
+      background-color: #008CBA;
+      color: white;
+    }
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .results-table th, .results-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    .results-table th {
+      background-color: #f2f2f2;
+    }
+    .normal-range {
+      background-color: #e6ffe6;
+    }
+    .result-cell {
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+      border-radius: 50%;
+      margin: 0 2px;
+    }
+    .right-ear {
+      background-color: red;
+    }
+    .left-ear {
+      background-color: blue;
+    }
+    h1 {
+      margin-bottom: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>בדיקת שמיעה ידנית משופרת</h1>
+    
+    <div class="slider-container">
+      <button class="slider-button" id="freq-minus">-</button>
+      <input type="range" id="frequency" class="slider" min="0" max="10" value="0" step="1">
+      <button class="slider-button" id="freq-plus">+</button>
+      <span class="slider-value" id="freq-display">125 Hz</span>
+    </div>
+
+    <div class="slider-container">
+      <button class="slider-button" id="vol-minus">-</button>
+      <input type="range" id="volume" class="slider" min="0" max="16" value="4" step="1">
+      <button class="slider-button" id="vol-plus">+</button>
+      <span class="slider-value" id="vol-display">10 dB</span>
+    </div>
+
+    <div class="ear-controls">
+      <div class="ear-control">
+        <h2>אוזן ימין</h2>
+        <button class="ear-button play-tone" id="play-right">צליל אוזן ימין</button>
+        <button class="ear-button record-result" id="record-right">תעד תוצאה</button>
+      </div>
+      <div class="ear-control">
+        <h2>אוזן שמאל</h2>
+        <button class="ear-button play-tone" id="play-left">צליל אוזן שמאל</button>
+        <button class="ear-button record-result" id="record-left">תעד תוצאה</button>
+      </div>
+    </div>
+
+    <table class="results-table">
+      <tr>
+        <th>Hz / dB</th>
+        <th>125</th>
+        <th>250</th>
+        <th>500</th>
+        <th>750</th>
+        <th>1000</th>
+        <th>1500</th>
+        <th>2000</th>
+        <th>3000</th>
+        <th>4000</th>
+        <th>6000</th>
+        <th>8000</th>
+      </tr>
+    </table>
+  </div>
+
+  <script>
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const frequencies = [125, 250, 500, 750, 1000, 1500, 2000, 3000, 4000, 6000, 8000];
+    const volumes = [-10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+    let testResults = {
+      right: {},
+      left: {}
+    };
+
+    function initTable() {
+      const table = document.querySelector('.results-table');
+      volumes.forEach((vol, index) => {
+        const row = table.insertRow();
+        const cell = row.insertCell();
+        cell.textContent = vol;
+        if (vol >= 10 && vol < 25) {
+          row.classList.add('normal-range');
+        }
+        for (let i = 0; i < 11; i++) {
+          row.insertCell();
+        }
+      });
+    }
+
+    function playTone(ear) {
+      const frequency = frequencies[document.getElementById('frequency').value];
+      const volume = volumes[document.getElementById('volume').value];
+
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      const stereoPanner = audioContext.createStereoPanner();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+      stereoPanner.pan.value = ear === 'left' ? -1 : 1;
+      
+      const amplitude = Math.pow(10, (volume - 100) / 20);
+      gainNode.gain.setValueAtTime(amplitude, audioContext.currentTime);
+
+      oscillator.connect(stereoPanner).connect(gainNode).connect(audioContext.destination);
+      oscillator.start();
+      setTimeout(() => oscillator.stop(), 1000);
+    }
+
+    function recordResult(ear) {
+      const frequency = frequencies[document.getElementById('frequency').value];
+      const volume = volumes[document.getElementById('volume').value];
+
+      testResults[ear][frequency] = volume;
+      updateTable();
+    }
+
+    function updateTable() {
+      const table = document.querySelector('.results-table');
+      for (let i = 1; i <= 11; i++) {
+        for (let j = 1; j <= 17; j++) {
+          const cell = table.rows[j].cells[i];
+          cell.innerHTML = '';
+        }
+      }
+      for (const ear in testResults) {
+        for (const freq in testResults[ear]) {
+          const row = table.rows[volumes.indexOf(testResults[ear][freq]) + 1];
+          const cell = row.cells[frequencies.indexOf(parseInt(freq)) + 1];
+          const dot = document.createElement('div');
+          dot.className = `result-cell ${ear}-ear`;
+          cell.appendChild(dot);
+        }
+      }
+    }
+
+    function updateFrequencyDisplay() {
+      const display = document.getElementById('freq-display');
+      display.textContent = `${frequencies[this.value]} Hz`;
+      updateSliderValuePosition(this, display);
+    }
+
+    function updateVolumeDisplay() {
+      const display = document.getElementById('vol-display');
+      display.textContent = `${volumes[this.value]} dB`;
+      updateSliderValuePosition(this, display);
+    }
+
+    function updateSliderValuePosition(slider, display) {
+      const sliderRect = slider.getBoundingClientRect();
+      const thumbWidth = 25;
+      const range = slider.max - slider.min;
+      const valuePosition = ((range - (slider.value - slider.min)) / range) * (sliderRect.width - thumbWidth);
+      display.style.left = `calc(${valuePosition}px + ${thumbWidth / 2}px)`;
+    }
+
+    function changeFrequency(change) {
+      const slider = document.getElementById('frequency');
+      slider.value = Math.max(0, Math.min(10, parseInt(slider.value) + change));
+      updateFrequencyDisplay.call(slider);
+    }
+
+    function changeVolume(change) {
+      const slider = document.getElementById('volume');
+      slider.value = Math.max(0, Math.min(16, parseInt(slider.value) + change));
+      updateVolumeDisplay.call(slider);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initTable();
+      document.getElementById('play-right').addEventListener('click', () => playTone('right'));
+      document.getElementById('play-left').addEventListener('click', () => playTone('left'));
+      document.getElementById('record-right').addEventListener('click', () => recordResult('right'));
+      document.getElementById('record-left').addEventListener('click', () => recordResult('left'));
+
+      const freqSlider = document.getElementById('frequency');
+      freqSlider.addEventListener('input', updateFrequencyDisplay);
+      updateFrequencyDisplay.call(freqSlider);
+
+      const volSlider = document.getElementById('volume');
+      volSlider.addEventListener('input', updateVolumeDisplay);
+      updateVolumeDisplay.call(volSlider);
+
+      document.getElementById('freq-minus').addEventListener('click', () => changeFrequency(-1));
+      document.getElementById('freq-plus').addEventListener('click', () => changeFrequency(1));
+      document.getElementById('vol-minus').addEventListener('click', () => changeVolume(-1));
+      document.getElementById('vol-plus').addEventListener('click', () => changeVolume(1));
+
+      // הוספת אירועי resize כדי לעדכן את מיקום התוויות כאשר גודל החלון משתנה
+      window.addEventListener('resize', () => {
+        updateFrequencyDisplay.call(freqSlider);
+        updateVolumeDisplay.call(volSlider);
+      });
+    });
+  </script>
+</body>
+</html>
